@@ -1,36 +1,99 @@
-import React, { useState } from 'react';
+import React, { useState, FormEvent, useEffect } from 'react';
 import { FiChevronRight } from 'react-icons/fi';
+import { Link } from 'react-router-dom';
 import logoImg from '../../assets/github-logo.svg';
-import { Title, Form, Repositories } from './styles';
+import { Title, Form, Repositories, Error } from './styles';
 import api from '../../services/api';
 
+interface RepositoryDTO {
+  full_name: string;
+  description: string;
+  owner: {
+    login: string;
+    avatar_url: string;
+  };
+}
+
 const Dashboard: React.FC = () => {
-  const [repositories, setRepositories] = useState([]);
+  const [newRepo, setNewRepo] = useState('');
+  const [inputError, setInputError] = useState('');
+  const [repositories, setRepositories] = useState<RepositoryDTO[]>(() => {
+    const storagedRepositories = localStorage.getItem(
+      '@GithubExplorer:repositories',
+    );
+
+    if (!storagedRepositories) {
+      return [];
+    }
+
+    return JSON.parse(storagedRepositories);
+  });
+
+  useEffect(() => {
+    localStorage.setItem(
+      '@GithubExplorer:repositories',
+      JSON.stringify(repositories),
+    );
+  }, [repositories]);
+
+  async function handleAddRepository(
+    event: FormEvent<HTMLFormElement>,
+  ): Promise<void> {
+    event.preventDefault();
+
+    if (!newRepo) {
+      setInputError('Necessário preencher autor/nome do repositório.');
+      return;
+    }
+
+    try {
+      const response = await api.get<RepositoryDTO>(`/repos/${newRepo}`);
+      const repository = response.data;
+      setRepositories([...repositories, repository]);
+      setNewRepo('');
+      setInputError('');
+    } catch (err) {
+      setInputError(
+        'Repositório não existente. Por favor digite um repositório válido',
+      );
+    }
+  }
 
   return (
     <>
       <img src={logoImg} alt="Github Explorer" />
       <Title>Explore repositórios no Github</Title>
 
-      <Form>
-        <input placeholder="Digite o nome do repositório." />
+      <Form hasError={!!inputError} onSubmit={handleAddRepository}>
+        <input
+          placeholder="Digite o autor/nome do repositório."
+          value={newRepo}
+          onChange={(e) => setNewRepo(e.target.value)}
+        />
         <button type="submit">Pesquisar</button>
       </Form>
 
+      {inputError && <Error>{inputError}</Error>}
+
       <Repositories>
-        <a href="repository">
-          <img
-            src="https://avatars0.githubusercontent.com/u/51171908?s=460&u=09f2687b76fc38d1270c930efed483973597fdad&v=4"
-            alt="Luan Azevedo"
-          />
+        {repositories.map((repository) => (
+          <Link
+            key={repository.full_name}
+            to={`/repository/${repository.full_name}`}
+          >
+            <img
+              src={repository.owner.avatar_url}
+              alt={repository.owner.login}
+            />
 
-          <div>
-            <strong>first-react-project</strong>
-            <p>Small project to practice the concepts of react</p>
-          </div>
+            <div>
+              <strong>{repository.full_name}</strong>
+              <p>{repository.description}</p>
+            </div>
 
-          <FiChevronRight size={20} />
-        </a>
+            <FiChevronRight size={20} />
+          </Link>
+        ))}
       </Repositories>
     </>
   );
