@@ -5,7 +5,7 @@ import logoImg from '../../assets/github-logo.svg';
 import { Title, Form, Repositories, Error } from './styles';
 import api from '../../services/api';
 
-interface RepositoryDTO {
+interface Repository {
   full_name: string;
   description: string;
   owner: {
@@ -17,7 +17,7 @@ interface RepositoryDTO {
 const Dashboard: React.FC = () => {
   const [newRepo, setNewRepo] = useState('');
   const [inputError, setInputError] = useState('');
-  const [repositories, setRepositories] = useState<RepositoryDTO[]>(() => {
+  const [repositories, setRepositories] = useState<Repository[]>(() => {
     const storagedRepositories = localStorage.getItem(
       '@GithubExplorer:repositories',
     );
@@ -47,7 +47,7 @@ const Dashboard: React.FC = () => {
     }
 
     try {
-      const response = await api.get<RepositoryDTO>(`/repos/${newRepo}`);
+      const response = await api.get<Repository>(`/repos/${newRepo}`);
       const repository = response.data;
       setRepositories([...repositories, repository]);
       setNewRepo('');
