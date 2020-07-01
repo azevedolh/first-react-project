@@ -69,6 +69,7 @@ const Dashboard: React.FC = () => {
           placeholder="Digite o autor/nome do repositório."
           value={newRepo}
           onChange={(e) => setNewRepo(e.target.value)}
+          onFocus={() => setInputError('')}
         />
         <button type="submit">Pesquisar</button>
       </Form>
